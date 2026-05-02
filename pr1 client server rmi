@@ -1,0 +1,90 @@
+AddInterface.java 
+ 
+import java.rmi.*; 
+ 
+public interface AddInterface extends Remote { 
+    // The method we want to call remotely 
+    public int add(int x, int y) throws RemoteException; 
+} 
+ 
+AddImplementation.java 
+ 
+ 
+import java.rmi.*; 
+import java.rmi.server.*; 
+ 
+public class AddImplementation extends UnicastRemoteObject implements AddInterface { 
+    public AddImplementation() throws RemoteException { 
+        super(); 
+    } 
+ 
+    @Override 
+    public int add(int x, int y) { 
+        return (x + y); 
+    } 
+} 
+ 
+Server.java 
+ 
+ 
+import java.rmi.*; 
+import java.rmi.registry.*; 
+ 
+public class Server { 
+    public static void main(String[] args) { 
+        try { 
+            AddInterface obj = new AddImplementation(); 
+            // Bind the remote object in the registry 
+            Naming.rebind("AddService", obj); 
+            System.out.println("Server is ready."); 
+        } catch (Exception e) { 
+            System.out.println("Server failed: " + e); 
+        } 
+    } 
+} 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Client.java 
+ 
+import java.rmi.*; 
+ 
+public class Client { 
+    public static void main(String[] args) { 
+        try { 
+            // Locate the remote object 
+            AddInterface obj = (AddInterface) Naming.lookup("rmi://localhost/AddService"); 
+             
+            int result = obj.add(10, 20); 
+            System.out.println("Addition Result: " + result); 
+        } catch (Exception e) { 
+            System.out.println("Client Error: " + e); 
+        } 
+    } 
+}
+
+
+
+run:
+student@student: ~
+bash: export: home/hdoop/apache-hive-4.0.0-beta-1-bin': not a valid identifier
+student@student: $ javac Server.java
+student@student: $ javac Client.java
+student@student: $ javac AddInterface.java
+student@student: $ javac AddImplementation.java
+student@student: $ rmiregistry
+student@student:
+
+bash: export: home/hdoop/apache-hive-4.0.0-beta-1-bin': not a valid identifier
+student@student: $ java Server
+Server is ready.
+student@student: -
+
+bash: export: home/hdoop/apache-hive-4.0.0-beta-1-bin': not a valid identifier
+student@student: $ java Client
+Addition Result: 30
+student@student:
