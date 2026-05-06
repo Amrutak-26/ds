@@ -1,1 +1,118 @@
+#server.py
+import socket
+import threading
+import datetime
+import time
+
+clients = []
+
+# Receive time from client
+def handle_client(conn, addr):
+    while True:
+        try:
+            client_time = conn.recv(1024).decode()
+            clients.append((conn, datetime.datetime.fromisoformat(client_time)))
+        except:
+            break
+
+# Calculate average time difference
+def synchronize():
+    while True:
+        time.sleep(10)
+
+        if len(clients) == 0:
+            print("No clients connected")
+            continue
+
+        print("\n--- Synchronizing Clocks ---")
+
+        current_time = datetime.datetime.now()
+        time_diffs = []
+
+        # Calculate differences
+        for conn, client_time in clients:
+            diff = client_time - current_time
+            time_diffs.append(diff)
+
+        # Average difference
+        avg_diff = sum(time_diffs, datetime.timedelta()) / len(time_diffs)
+
+        # Send adjustment
+        for conn, client_time in clients:
+            try:
+                adjustment = avg_diff - (client_time - current_time)
+                conn.send(str(adjustment.total_seconds()).encode())
+            except:
+                pass
+
+        clients.clear()
+
+
+# Start server
+def start_server():
+    server = socket.socket()
+    server.bind(("0.0.0.0", 8080))
+    server.listen(5)
+
+    print("Server started...")
+
+    threading.Thread(target=synchronize, daemon=True).start()
+
+    while True:
+        conn, addr = server.accept()
+        print(f"Connected: {addr}")
+        threading.Thread(target=handle_client, args=(conn, addr)).start()
+
+
+if __name__ == "__main__":
+    start_server()
+
+#client
+import socket
+import datetime
+import time
+import threading
+
+clock_offset = 0  # local adjustment
+
+# Send local time to server
+def send_time(client):
+    global clock_offset
+
+    while True:
+        local_time = datetime.datetime.now() + datetime.timedelta(seconds=clock_offset)
+        client.send(local_time.isoformat().encode())
+        time.sleep(5)
+
+
+# Receive adjustment from server
+def receive_adjustment(client):
+    global clock_offset
+
+    while True:
+        try:
+            adjustment = float(client.recv(1024).decode())
+            clock_offset += adjustment
+            print(f"Clock adjusted by {adjustment} seconds")
+        except:
+            break
+
+
+def start_client():
+    client = socket.socket()
+    client.connect(("127.0.0.1", 8080))
+
+    print("Connected to server")
+
+    threading.Thread(target=send_time, args=(client,)).start()
+    threading.Thread(target=receive_adjustment, args=(client,)).start()
+
+
+if __name__ == "__main__":
+    start_client()
+
+
+run:
+python3 server.py
+python3 client.py
 
